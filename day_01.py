@@ -4,7 +4,7 @@ from itertools import accumulate
 from collections import deque
 
 def part_1(rawdata):
-    data = [50] + [int(l[1:]) * (-1 if l.startswith("L") else 1) for l in rawdata.splitlines()]
+    data = [50] + [int(l.replace("R", "").replace("L","-")) for l in rawdata.splitlines()]
     return str(sum(not s % 100 for s in accumulate(data)))
 
 def part_2(rawdata):
