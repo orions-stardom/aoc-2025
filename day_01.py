@@ -1,29 +1,14 @@
 #!/usr/bin/env python
 import sys
-from itertools import accumulate
-from collections import deque
+from itertools import accumulate, chain
 
 def part_1(rawdata):
     data = [50] + [int(l.replace("R", "").replace("L","-")) for l in rawdata.splitlines()]
     return str(sum(not s % 100 for s in accumulate(data)))
 
 def part_2(rawdata):
-    # Im sure theres a pure arithmetic way to do this but fuck it its day 1,
-    # the numbers are probably small enough to just do it for real
-    dial = deque(range(100))
-    dial.rotate(50)
-
-    zeroes = 0
-    for l in rawdata.splitlines():
-        num = int(l[1:])
-        direction = -1 if l.startswith("L") else 1
-        for _ in range(num):
-            dial.rotate(direction)
-            if dial[0] == 0:
-                zeroes += 1
-
-    return str(zeroes)
-
+    data = [50] + list(chain.from_iterable([-1 if l.startswith("L") else 1]*int(l[1:]) for l in rawdata.splitlines()))
+    return str(sum(not s % 100 for s in accumulate(data)))
 
 from aocd import puzzle, submit
 import pytest
