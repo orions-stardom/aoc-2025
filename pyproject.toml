@@ -12,7 +12,7 @@ dependencies = [
     "portion>=2.4.1",
     "sympy>=1.12",
     "aocd-example-parser>=2023.12.20",
-    "rich>=13.9.4",
+    "rich>=14.2.0",
     "pytest>=8.3.3",
 ]
 # name = "advent of python"
