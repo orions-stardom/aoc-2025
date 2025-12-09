@@ -2,6 +2,7 @@
 import sys
 import itertools as it
 import portion as P
+from dataclasses import dataclass
 
 from rich import print
 
@@ -23,48 +24,51 @@ def part_1(rawdata):
 def part_2(rawdata):
     red_tiles = [coord(line) for line in rawdata.splitlines()]
 
-    class Line:
-        def __init__(self, a,b):
-            if a.real == b.real:
-                self.vertical = True
-                self.fixed = a.real
-                self.interval = P.open(min(a.imag,b.imag), max(a.imag, b.imag))
-            elif a.imag == b.imag:
-                self.vertical = False 
-                self.fixed = a.imag
-                self.interval = P.open(min(a.real,b.real), max(a.real, b.real))
-            else:
-                raise ValueError("only horizontal and vertical lines exist")
+    @dataclass
+    class HorizontalLine:
+        xs: P.Interval
+        y: int
 
         def __contains__(self, point):
-            if self.vertical:
-                return point.real == self.fixed and point.imag in self.interval
-            else:
-                return point.imag == self.fixed and point.real in self.interval
+            return point.real in self.xs and point.imag == self.y
 
         def __str__(self):
-            if self.vertical:
-                return f"({self.fixed}, {self.interval.lower})->({self.fixed},{self.interval.upper})"
-            else:
-                return f"({self.interval.lower}, {self.fixed})->({self.interval.upper}, {self.fixed})"
+            return f"({self.xs.lower}, {self.y})->({self.xs.upper}, {self.y})"
 
-    def polygon(points):
-        poly = [Line(a,b) for a,b in it.pairwise(points)]
-        poly.append(Line(points[0], points[-1]))
-        return poly
+    @dataclass
+    class VerticalLine:
+        x: int
+        ys: P.Interval 
 
-    perimeter = polygon(red_tiles)
+        def __contains__(self, point):
+            return point.real == self.x and point.imag in self.ys
 
+        def __str__(self):
+            return f"({self.x}, {self.ys.lower})->({self.x},{self.ys.upper})"
+
+
+    verticals = []
+    horizontals = []
+
+    for p1,p2 in it.pairwise(red_tiles + [red_tiles[0]]):
+        if p1.real == p2.real:
+            verticals.append(VerticalLine(p1.real, P.open(min(p1.imag, p2.imag), max(p1.imag, p2.imag) )))
+        elif p1.imag == p2.imag:
+            horizontals.append(HorizontalLine(P.open(min(p1.real, p2.real), max(p1.real, p2.real) ), p1.imag))
+        else:
+            raise ValueError("Uh..")
+
+    
     def valid_rectangle(a,b):
-        rectangle = polygon([a,complex(a.real,b.imag),b,complex(b.real,a.imag)])
-        for l1, l2 in it.product(rectangle, perimeter):
+        rect_xs = P.open(min(a.real, b.real), max(a.real, b.real))
+        rect_ys = P.open(min(a.imag, b.imag), max(a.imag, b.imag))
 
-            if l1.vertical == l2.vertical:
-                if l1.fixed == l2.fixed and not l1.interval in l2.interval and not l2.interval in l1.interval:
-                    return False 
-                continue
+        for line in verticals:
+            if line.x in rect_xs and (rect_ys.lower in line.ys or rect_ys.upper in line.ys):
+                return False
 
-            if l1.fixed in l2.interval and l2.fixed in l1.interval:
+        for line in horizontals:
+            if (rect_xs.lower in line.xs or rect_xs.upper in line.xs) and line.y in rect_ys:
                 return False
 
         return True
@@ -88,7 +92,7 @@ def part_2(rawdata):
                 print("[bold blue]X[/bold blue]", end="")
             elif z in red_tiles:
                 print("[red]X[/red]", end="")
-            elif any(z in line for line in perimeter):
+            elif any(z in line for line in horizontals+verticals):
                 print("[green]X[/green]", end="")
             else:
                 print(".", end="")
