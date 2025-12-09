@@ -58,7 +58,10 @@ def part_2(rawdata):
     def valid_rectangle(a,b):
         rectangle = polygon([a,complex(a.real,b.imag),b,complex(b.real,a.imag)])
         for l1, l2 in it.product(rectangle, perimeter):
+
             if l1.vertical == l2.vertical:
+                if l1.fixed == l2.fixed and not l1.interval in l2.interval and not l2.interval in l1.interval:
+                    return False 
                 continue
 
             if l1.fixed in l2.interval and l2.fixed in l1.interval:
@@ -117,6 +120,6 @@ if __name__ == "__main__":
     #     sys.exit(res.value)
 
     part_2(puzzle.examples[0].input_data)
-
+    # part_2(puzzle.input_data)
     # submit(part_1(puzzle.input_data), part="a", reopen=False)
     # submit(part_2(puzzle.input_data), part="b", reopen=False)
