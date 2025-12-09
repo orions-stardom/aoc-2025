@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 import itertools as it
-from collections import defaultdict
 import portion as P
 
 def coord(data):
@@ -21,36 +20,50 @@ def part_1(rawdata):
 
 def part_2(rawdata):
     red_tiles = [coord(line) for line in rawdata.splitlines()]
-    perimeter = set(red_tiles)
 
-    for a,b in it.pairwise(red_tiles):
-        if a.real == b.real:
-            lo_y = int(min(a.imag,b.imag))
-            hi_y = int(max(a.imag,b.imag))
-            perimeter |= {complex(a.real,y) for y in range(lo_y,hi_y)}
-        elif a.imag == b.imag:
-            lo_x = int(min(a.real,b.real))
-            hi_x = int(max(a.real,b.real))
-            perimeter |= {complex(x,a.imag) for x in range(lo_x,hi_x)}
+    class Line:
+        def __init__(self, a,b):
+            if a.real == b.real:
+                self.vertical = True
+                self.fixed = a.real
+                self.interval = P.open(min(a.imag,b.imag), max(a.imag, b.imag))
+            elif a.imag == b.imag:
+                self.vertical = False 
+                self.fixed = a.imag
+                self.interval = P.open(min(a.real,b.real), max(a.real, b.real))
+            else:
+                raise ValueError("only horizontal and vertical lines exist")
 
-    edge_groups = defaultdict(list)
-    for x, cs in it.groupby(perimeter, lambda c: c.real):
-        edge_groups[int(x)].extend(int(c.imag) for c in cs)
+    def polygon(points):
+        poly = [Line(a,b) for a,b in it.pairwise(points)]
+        poly.append(Line(points[0], points[-1]))
+        return poly
 
-    all_tiles = {x: P.empty() for x in edge_groups}
-    for x, col in edge_groups.items():
-        col.sort()
-        for lo_y, hi_y in it.pairwise(col):
-            all_tiles[x] |= P.closed(lo_y,hi_y)
+    def lines_intersect(l1, l2):
+        if l1.vertical == l2.vertical:
+            return False
+
+        return l1.fixed in l2.interval and l2.fixed in l1.interval
+
+    def polygons_intersect(poly1, poly2):
+        return any(lines_intersect(l1,l2) for l1,l2 in it.product(poly1, poly2))
+
+    perimeter = polygon(red_tiles)
 
     def valid_rectangle(a,b):
-        ys = P.closed(a.imag,b.imag)
-        return all(ys in all_tiles[x] for x in range(int(a.real), int(b.real)+1))
+        rectangle = polygon([a,complex(a.real,b.imag),b,complex(b.real,a.imag)])
+        return not polygons_intersect(perimeter,rectangle)
 
-    biggest = max(area(a,b) for a,b in it.combinations(red_tiles,2) if valid_rectangle(a,b)) 
+    # biggest = max(area(a,b) for a,b in it.combinations(red_tiles,2) if valid_rectangle(a,b)) 
+    # the area calculation is considerably cheaper
+    biggest = 0
+    for a,b in it.combinations(red_tiles,2):
+        candidate = area(a,b)
+        if candidate > biggest and valid_rectangle(a,b):
+            biggest = candidate
+
     return str(biggest)
         
-
 from aocd import puzzle, submit
 import pytest
 
