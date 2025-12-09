@@ -21,7 +21,7 @@ def part_1(rawdata):
     biggest = max(area(a,b) for a,b in it.combinations(coords,2) )
     return str(biggest)
 
-def part_2(rawdata):
+def part_2(rawdata, debug=False):
     red_tiles = [coord(line) for line in rawdata.splitlines()]
 
     @dataclass
@@ -58,17 +58,35 @@ def part_2(rawdata):
         else:
             raise ValueError("Uh..")
 
+
+    def point_in_polygon(z):
+        inside = False
+        for edge in verticals:
+            if z in edge:
+                return True
+
+            if edge.x > z.real and  z.imag in edge.ys:
+                inside = not inside
+
+        return inside
     
     def valid_rectangle(a,b):
-        rect_xs = P.open(min(a.real, b.real), max(a.real, b.real))
-        rect_ys = P.open(min(a.imag, b.imag), max(a.imag, b.imag))
+        xs = P.closed(min(a.real, b.real), max(a.real, b.real))
+        ys = P.closed(min(a.imag, b.imag), max(a.imag, b.imag))
+
+        corners = complex(xs.lower, ys.lower), \
+                  complex(xs.upper, ys.lower), \
+                  complex(xs.lower, ys.upper), \
+                  complex(xs.upper, ys.upper)
+        if not all(point_in_polygon(corner) for corner in corners):
+            return False
 
         for line in verticals:
-            if line.x in rect_xs and (rect_ys.lower in line.ys or rect_ys.upper in line.ys):
+            if line.x in xs and (ys.lower in line.ys or ys.upper in line.ys):
                 return False
 
         for line in horizontals:
-            if (rect_xs.lower in line.xs or rect_xs.upper in line.xs) and line.y in rect_ys:
+            if (xs.lower in line.xs or xs.upper in line.xs) and line.y in ys:
                 return False
 
         return True
@@ -83,23 +101,24 @@ def part_2(rawdata):
             biggest = candidate
             best_ab = a, b
 
-    for y in range(max(int(z.imag) for z in red_tiles)+2):
-        for x in range(max(int(z.real) for z in red_tiles)+2):
-            z = complex(x,y)
-            if z in best_ab:
-                print("[bold red]#[/bold red]", end="")
-            elif z in {9+5j,2+3j}:
-                print("[bold blue]X[/bold blue]", end="")
-            elif z in red_tiles:
-                print("[red]X[/red]", end="")
-            elif any(z in line for line in horizontals+verticals):
-                print("[green]X[/green]", end="")
-            else:
-                print(".", end="")
-        print()
+    if debug:
+        for y in range(max(int(z.imag) for z in red_tiles)+2):
+            for x in range(max(int(z.real) for z in red_tiles)+2):
+                z = complex(x,y)
+                if z in best_ab:
+                    print("[bold red]#[/bold red]", end="")
+                elif z in {9+5j,2+3j}:
+                    print("[bold blue]X[/bold blue]", end="")
+                elif z in red_tiles:
+                    print("[red]X[/red]", end="")
+                elif any(z in line for line in horizontals+verticals):
+                    print("[green]X[/green]", end="")
+                else:
+                    print(".", end="")
+            print()
 
-    print()
-    print("Area: ", biggest)
+        print()
+        print("Area: ", biggest)
 
     return str(biggest)
         
@@ -116,14 +135,15 @@ def test_part_1(data, result):
      [(ex.input_data, ex.answer_b) for ex in puzzle.examples])
 def test_part_2(data, result):
     result = "24" # more aoce parsing error
-    assert part_2(data) == result
+    assert part_2(data, debug=True) == result
 
 if __name__ == "__main__":
-    # res = pytest.main([__file__])
-    # if res:
-    #     sys.exit(res.value)
+    res = pytest.main([__file__])
+    if res:
+        sys.exit(res.value)
 
-    part_2(puzzle.examples[0].input_data)
+    # part_2(puzzle.examples[0].input_data, debug=True)
     # part_2(puzzle.input_data)
-    # submit(part_1(puzzle.input_data), part="a", reopen=False)
-    # submit(part_2(puzzle.input_data), part="b", reopen=False)
+
+    submit(part_1(puzzle.input_data), part="a", reopen=False)
+    submit(part_2(puzzle.input_data), part="b", reopen=False)
