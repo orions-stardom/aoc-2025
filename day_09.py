@@ -43,9 +43,11 @@ def part_2(rawdata):
         for lo_y, hi_y in it.pairwise(col):
             all_tiles[x] |= P.closed(lo_y,hi_y)
 
-    # hope like all get out that this shape is convex
-    biggest = max(area(a,b) for a,b in it.combinations(red_tiles,2) 
-                if b.imag in all_tiles[a.real] and a.imag in all_tiles[b.real] )
+    def valid_rectangle(a,b):
+        ys = P.closed(a.imag,b.imag)
+        return all(ys in all_tiles[x] for x in range(int(a.real), int(b.real)+1))
+
+    biggest = max(area(a,b) for a,b in it.combinations(red_tiles,2) if valid_rectangle(a,b)) 
     return str(biggest)
         
 
